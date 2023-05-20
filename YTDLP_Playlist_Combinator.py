@@ -56,7 +56,10 @@ with open("super_cool_list.txt", 'w') as list:
         list.write(f"file '{file}'\n")
 
 returncode = os.system(f'ffmpeg -safe 0 -f concat -i super_cool_list.txt -c copy "..\{playlist.get("title")}.webm"') 
-# If files couldn't be concat-ed
+# If files couldn't be losslessly combined
+if returncode != 0:
+    print("Something went wrong when concatenating the files, giving up.  Have fun!")
+    exit()
 
 clear_working_path()
 
