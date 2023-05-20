@@ -3,10 +3,11 @@ import os
 import random
 def monitor(d):
     filenames.append(d.get('info_dict').get('_filename'))
-def rm_r(path):
+def clear_working_path():
     for file in os.listdir(working_path):
         os.remove(f'{working_path}\\{file}')
     os.rmdir(working_path)
+
 url = "https://music.youtube.com/playlist?list=OLAK5uy_mO-B6-lxdrHnNLB3vPPLRQVdzDbAZgHxc"
 dlp_options = {
         'format': 'bestvideo*+bestaudio/best',
@@ -25,7 +26,7 @@ filenames = []
 
 # Clear working path if it exists
 if os.path.exists(working_path):
-    rm_r(working_path)
+    clear_working_path()
 
 # Create working directory
 os.mkdir(working_path)
@@ -53,4 +54,4 @@ with open("super_cool_list.txt", 'w') as list:
 
 os.system("ffmpeg -safe 0 -f concat -i super_cool_list.txt -c copy ..\Playlist.webm") 
 
-rm_r(working_path)
+clear_working_path()
