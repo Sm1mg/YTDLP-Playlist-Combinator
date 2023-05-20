@@ -18,7 +18,7 @@ dlp_options = {
         'nocheckcertificate': True,
         'ignoreerrors': False,
         'logtostderr': False,
-        'quiet': False,
+        'quiet': True,
         'no_warnings': False,
         'default_search': 'auto',
         'source_address': '0.0.0.0',
@@ -55,7 +55,8 @@ with open("super_cool_list.txt", 'w') as list:
     for file in filenames:
         list.write(f"file '{file}'\n")
 
-os.system(f'ffmpeg -safe 0 -f concat -i super_cool_list.txt -c copy "..\{playlist.get("title")}.webm"') 
+returncode = os.system(f'ffmpeg -safe 0 -f concat -i super_cool_list.txt -c copy "..\{playlist.get("title")}.webm"') 
+# If files couldn't be concat-ed
 
 clear_working_path()
 
