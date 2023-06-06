@@ -35,11 +35,15 @@ if os.path.exists(working_path):
     # Clear the working path if the files have been ordered already
     if os.path.exists(f"{working_path}/0.webm"):
         clear_working_path()
-
-# Create working directory
-os.mkdir(working_path)
-print("Working path created")
-os.chdir(working_path)
+        # Create working directory
+        os.mkdir(working_path)
+        print("Working path created")
+        os.chdir(working_path)     
+else:
+    # Create working directory
+    os.mkdir(working_path)
+    print("Working path created")
+    os.chdir(working_path)
 
 # Download playlist
 playlist = yt_dlp.YoutubeDL(dlp_options).extract_info(url)
