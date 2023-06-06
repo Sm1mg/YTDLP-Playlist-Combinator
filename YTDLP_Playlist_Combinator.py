@@ -8,6 +8,8 @@ def clear_working_path():
     for file in os.listdir(working_path):
         os.remove(f'{working_path}\\{file}')
     os.rmdir(working_path)
+    print("Working path renoved")
+
 
 if len(sys.argv) == 1:
     url = "https://music.youtube.com/playlist?list=OLAK5uy_nmDUsWOMoEcz0SsVqUwir0oxu-k1oUyXE"
@@ -28,9 +30,11 @@ dlp_options = {
 working_path = os.path.join(os.getcwd(),"working")
 filenames = []
 
-# Clear working path if it exists
+# Check if working path exists
 if os.path.exists(working_path):
-    clear_working_path()
+    # Clear the working path if the files have been ordered already
+    if os.path.exists(f"{working_path}/0.webm"):
+        clear_working_path()
 
 # Create working directory
 os.mkdir(working_path)
