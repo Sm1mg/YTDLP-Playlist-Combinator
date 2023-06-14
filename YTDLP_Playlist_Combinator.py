@@ -19,7 +19,7 @@ def queue_worker():
         video = queue.pop()
         yt_dlp.YoutubeDL(dlp_options).download(video)
 
-thread_count = 16
+thread_count = 8
 
 if len(sys.argv) == 1:
     url = "https://music.youtube.com/playlist?list=OLAK5uy_nmDUsWOMoEcz0SsVqUwir0oxu-k1oUyXE"
