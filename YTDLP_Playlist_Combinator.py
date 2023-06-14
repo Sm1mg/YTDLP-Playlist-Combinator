@@ -4,6 +4,8 @@ import random
 import sys
 import threading
 
+thread_count = 8
+
 def monitor(d):
     filenames.append(d.get('info_dict').get('_filename'))
 def clear_working_path():
@@ -19,8 +21,6 @@ def queue_worker():
         video = queue.pop()
         yt_dlp.YoutubeDL(dlp_options).download(video)
 
-thread_count = 8
-
 if len(sys.argv) == 1:
     url = "https://music.youtube.com/playlist?list=OLAK5uy_nmDUsWOMoEcz0SsVqUwir0oxu-k1oUyXE"
 else:
@@ -30,7 +30,7 @@ dlp_options = {
         'nocheckcertificate': True,
         'ignoreerrors': False,
         'logtostderr': False,
-        'quiet': False,
+        'quiet': True,
         'no_warnings': False,
         'default_search': 'auto',
         'source_address': '0.0.0.0',
@@ -41,20 +41,14 @@ dlp_options = {
 working_path = os.path.join(os.getcwd(),"working")
 filenames = []
 
-# Check if working path exists
+# If the working path exists aleady, clear it
 if os.path.exists(working_path):
-    # Clear the working path if the files have been ordered already
-    if os.path.exists(f"{working_path}/0.webm"):
-        clear_working_path()
-        # Create working directory
-        os.mkdir(working_path)
-        print("Working path created")
-        os.chdir(working_path)     
-else:
-    # Create working directory
-    os.mkdir(working_path)
-    print("Working path created")
-    os.chdir(working_path)
+    clear_working_path()     
+
+# Create working directory
+os.mkdir(working_path)
+print("Working path created")
+os.chdir(working_path)
 
 # Gather data on playlist
 playlist = yt_dlp.YoutubeDL(dlp_options).extract_info(url, download=False)
@@ -78,9 +72,12 @@ for i in range(thread_count):
 for thread in threads:
     thread.join()
 
-
 # Briefly convert to dict to remove duplicates because of some weird yt_dlp shit
 filenames = list(dict.fromkeys(filenames))
+
+# Make sure the number of files matches what we're expecting
+if len(os.listdir(working_path)) != len(filenames):
+    print("Something went wrong while downloading the videos, try turning down thread_count?")
 
 # Rename all the files because ffmpeg pissy otherwise
 for i, file in enumerate(filenames):
