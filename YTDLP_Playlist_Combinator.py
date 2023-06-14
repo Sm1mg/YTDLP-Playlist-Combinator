@@ -2,6 +2,8 @@ import yt_dlp
 import os
 import random
 import sys
+import threading
+
 def monitor(d):
     filenames.append(d.get('info_dict').get('_filename'))
 def clear_working_path():
@@ -10,6 +12,14 @@ def clear_working_path():
     os.rmdir(working_path)
     print("Working path renoved")
 
+def queue_worker():
+    os.chdir(working_path)
+    # While the queue isn't empty, consume links and download them
+    while queue:
+        video = queue.pop()
+        yt_dlp.YoutubeDL(dlp_options).download(video)
+
+thread_count = 16
 
 if len(sys.argv) == 1:
     url = "https://music.youtube.com/playlist?list=OLAK5uy_nmDUsWOMoEcz0SsVqUwir0oxu-k1oUyXE"
@@ -20,10 +30,11 @@ dlp_options = {
         'nocheckcertificate': True,
         'ignoreerrors': False,
         'logtostderr': False,
-        'quiet': True,
+        'quiet': False,
         'no_warnings': False,
         'default_search': 'auto',
         'source_address': '0.0.0.0',
+        'extract_flat' : True,
         'lazy_playlist': True,
         'progress_hooks': [monitor]
     }
@@ -45,8 +56,28 @@ else:
     print("Working path created")
     os.chdir(working_path)
 
-# Download playlist
-playlist = yt_dlp.YoutubeDL(dlp_options).extract_info(url)
+# Gather data on playlist
+playlist = yt_dlp.YoutubeDL(dlp_options).extract_info(url, download=False)
+
+# List to store the threads and their queue
+threads = []
+queue = []
+
+# Fill queue for thread workers
+for video in playlist.get('entries'):
+    queue.append(video.get('url'))
+
+# Create thread to download each video
+for i in range(thread_count):
+    url = video.get('url')
+    thread = threading.Thread(target=queue_worker)
+    threads.append(thread)
+    thread.start()
+
+# Wait for all threads to finish
+for thread in threads:
+    thread.join()
+
 
 # Briefly convert to dict to remove duplicates because of some weird yt_dlp shit
 filenames = list(dict.fromkeys(filenames))
