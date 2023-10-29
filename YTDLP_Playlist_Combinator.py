@@ -10,9 +10,9 @@ def monitor(d):
     filenames.append(d.get('info_dict').get('_filename'))
 def clear_working_path():
     for file in os.listdir(working_path):
-        os.remove(f'{working_path}\\{file}')
+        os.remove(f'{working_path}/{file}')
     os.rmdir(working_path)
-    print("Working path renoved")
+    print("Working path removed")
 
 def queue_worker():
     os.chdir(working_path)
