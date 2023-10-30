@@ -2,36 +2,45 @@ import yt_dlp
 import os
 import random
 import sys
-import threading
+import concurrent.futures
+from optparse import OptionParser
 
-thread_count = 8
+parser = OptionParser(usage='usage: %prog [options] url')
+parser.add_option('-t', '--thread-count', dest='thread_count', type=int, default=8, metavar='THREADS',
+                  help="number of threads to download with:  default is 8")
+parser.add_option('-f', '--format', dest='format', default='bestvideo*+bestaudio/best',
+                  help='format to download using:  default is best audio + best video')
 
+(options, args) = parser.parse_args()
+print(args)
 def monitor(d):
     filenames.append(d.get('info_dict').get('_filename'))
+
 def clear_working_path():
     for file in os.listdir(working_path):
         os.remove(f'{working_path}/{file}')
     os.rmdir(working_path)
     print("Working path removed")
 
-def queue_worker():
-    os.chdir(working_path)
-    # While the queue isn't empty, consume links and download them
-    while queue:
-        video = queue.pop()
+def queue_worker(video):
+    try:
         yt_dlp.YoutubeDL(dlp_options).download(video)
+    except Exception as e:
+        print(f'Failed to download {video} because of {e}')
+        queue.append(video)
+    
 
-if len(sys.argv) == 1:
+if len(args) == 0:
     url = "https://music.youtube.com/playlist?list=OLAK5uy_nmDUsWOMoEcz0SsVqUwir0oxu-k1oUyXE"
 else:
-    url = sys.argv[1]
+    url = args[0]
 dlp_options = {
-        'format': 'bestvideo*+bestaudio/best',
+        'format': options.format,
         'nocheckcertificate': True,
         'ignoreerrors': False,
         'logtostderr': False,
         'quiet': True,
-        'no_warnings': False,
+        'no_warnings': True,
         'default_search': 'auto',
         'source_address': '0.0.0.0',
         'extract_flat' : True,
@@ -53,33 +62,27 @@ os.chdir(working_path)
 # Gather data on playlist
 playlist = yt_dlp.YoutubeDL(dlp_options).extract_info(url, download=False)
 
-# List to store the threads and their queue
-threads = []
+# List to store the queue
 queue = []
 
 # Fill queue for thread workers
 for video in playlist.get('entries'):
     queue.append(video.get('url'))
 
-# Create thread to download each video
-for i in range(thread_count):
-    url = video.get('url')
-    thread = threading.Thread(target=queue_worker)
-    threads.append(thread)
-    thread.start()
+# Create ThreadPoolExecutor to consume the queue
+with concurrent.futures.ThreadPoolExecutor(max_workers=options.thread_count) as executor:
+    executor.map(queue_worker, queue)
 
-# Wait for all threads to finish
-for thread in threads:
-    thread.join()
-
-# Briefly convert to dict to remove duplicates because of some weird yt_dlp shit
+# Briefly convert to dict to remove duplicates because of some weird yt_dlp quirk
 filenames = list(dict.fromkeys(filenames))
 
-# Make sure the number of files matches what we're expecting
-if len(os.listdir(working_path)) != len(filenames):
-    print("Something went wrong while downloading the videos, try turning down thread_count?")
+# Make sure we've gotten all of the right files
+if len(failed := [x for x in filenames if x not in os.listdir(working_path)]) != 0:
+    print("Something went wrong while downloading the videos, try turning down thread-count?")
+    print(f'The following failed:\n{failed}')
+    exit(1)
 
-# Rename all the files because ffmpeg pissy otherwise
+# Rename all the files because ffmpeg doesn't understand it otherwise
 for i, file in enumerate(filenames):
     os.rename(file, f'{i}.webm')
     filenames[i] = f'{i}.webm'
@@ -91,12 +94,14 @@ with open("super_cool_list.txt", 'w') as list:
     for file in filenames:
         list.write(f"file '{file}'\n")
 
-returncode = os.system(f'ffmpeg -safe 0 -f concat -i super_cool_list.txt -c copy "..\{playlist.get("title")}.webm"') 
+                               #-hide_banner -safe 0 -f concat -i super_cool_list.txt -c:a copy -c:v libsvtav1 -r 1 -g 120 -crf 23 -preset 7 -svtav1-params fast-decode=3
+returncode = os.system(f'ffmpeg -hide_banner -safe 0 -f concat -i super_cool_list.txt -c copy "..\{playlist.get("title")}.webm"') 
 # If files couldn't be losslessly combined
 if returncode != 0:
     print("Something went wrong when concatenating the files, giving up.  Have fun!")
-    exit()
+    exit(1)
 
 clear_working_path()
 
 print("Done, have a good day!")
+exit(0)
