@@ -10,9 +10,11 @@ parser.add_option('-t', '--thread-count', dest='thread_count', type=int, default
                   help="number of threads to download with:  default is 8")
 parser.add_option('-f', '--format', dest='format', default='bestvideo*+bestaudio/best',
                   help='format to download using:  default is best audio + best video')
-
+parser.add_option('-o', '--ffmpeg-options', dest='ffmpeg_options', default='-c copy', metavar='OPTIONS',
+                  help='''full ffmpeg parameters to use
+                  default will try to losslessly append the files (this will error if the inputs are of different resolutions)
+                                        ''')
 (options, args) = parser.parse_args()
-print(args)
 def monitor(d):
     filenames.append(d.get('info_dict').get('_filename'))
 
@@ -95,7 +97,7 @@ with open("super_cool_list.txt", 'w') as list:
         list.write(f"file '{file}'\n")
 
                                #-hide_banner -safe 0 -f concat -i super_cool_list.txt -c:a copy -c:v libsvtav1 -r 1 -g 120 -crf 23 -preset 7 -svtav1-params fast-decode=3
-returncode = os.system(f'ffmpeg -hide_banner -safe 0 -f concat -i super_cool_list.txt -c copy "..\{playlist.get("title")}.webm"') 
+returncode = os.system(f'ffmpeg -hide_banner -f concat -i super_cool_list.txt {options.ffmpeg_options} "..\{playlist.get("title")}.webm"') 
 # If files couldn't be losslessly combined
 if returncode != 0:
     print("Something went wrong when concatenating the files, giving up.  Have fun!")
