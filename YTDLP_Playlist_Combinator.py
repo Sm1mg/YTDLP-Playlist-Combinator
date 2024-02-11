@@ -62,7 +62,7 @@ else:
 # Create working directory
     os.mkdir(working_path)
     print("Working path created")
-    os.chdir(working_path)
+os.chdir(working_path)
 
 # Gather data on playlist
 playlist = yt_dlp.YoutubeDL(dlp_options).extract_info(url, download=False)
@@ -87,20 +87,17 @@ if len(failed := [x for x in filenames if x not in os.listdir(working_path)]) !=
     print(f'The following failed:\n{failed}')
     exit(1)
 
-# Rename all the files because ffmpeg doesn't understand it otherwise
-for i, file in enumerate(filenames):
-    os.rename(file, f'{i}.webm')
-    filenames[i] = f'{i}.webm'
-
 random.shuffle(filenames)
 
 # Write list of files for ffmpeg
 with open("super_cool_list.txt", 'w') as list:
     for file in filenames:
+        # Fix 's
+        file = file.replace("'", "'\\''")
         list.write(f"file '{file}'\n")
 
                                #-hide_banner -safe 0 -f concat -i super_cool_list.txt -c:a copy -c:v libsvtav1 -r 1 -g 120 -crf 23 -preset 7 -svtav1-params fast-decode=3
-returncode = os.system(f'ffmpeg -hide_banner -f concat -i super_cool_list.txt {options.ffmpeg_options} "..\{playlist.get("title")}.webm"') 
+returncode = os.system(f'ffmpeg -hide_banner -safe 0 -f concat -i super_cool_list.txt {options.ffmpeg_options} "..\{playlist.get("title")}.webm"') 
 # If files couldn't be losslessly combined
 if returncode != 0:
     print("Something went wrong when concatenating the files, giving up.  Have fun!")
