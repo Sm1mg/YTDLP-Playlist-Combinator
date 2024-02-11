@@ -78,7 +78,7 @@ for video in playlist.get('entries'):
 with concurrent.futures.ThreadPoolExecutor(max_workers=options.thread_count) as executor:
     executor.map(queue_worker, queue)
 
-# Briefly convert to dict to remove duplicates because of some weird yt_dlp quirk
+# Briefly convert to dict to remove duplicates
 filenames = list(dict.fromkeys(filenames))
 
 # Make sure we've gotten all of the right files
@@ -87,16 +87,26 @@ if len(failed := [x for x in filenames if x not in os.listdir(working_path)]) !=
     print(f'The following failed:\n{failed}')
     exit(1)
 
+# Append all files already in the directory (other than the filename list if it exists)
+if (dir := os.listdir(working_path)).count("super_cool_list.txt") != 0:
+    dir.remove("super_cool_list.txt")
+filenames.extend(dir)
+
+# Remove duplicates again
+filenames = list(dict.fromkeys(filenames))
+
 random.shuffle(filenames)
 
+
+
 # Write list of files for ffmpeg
-with open("super_cool_list.txt", 'w') as list:
+with open("super_cool_list.txt", 'w', encoding="utf-8") as list:
     for file in filenames:
         # Fix 's
         file = file.replace("'", "'\\''")
         list.write(f"file '{file}'\n")
 
-                               #-hide_banner -safe 0 -f concat -i super_cool_list.txt -c:a copy -c:v libsvtav1 -r 1 -g 120 -crf 23 -preset 7 -svtav1-params fast-decode=3
+                               #-hide_banner -safe 0 -f concat -i super_cool_list.txt -c:a copy -c:v libsvtav1 -r 5 -g 600 -crf 50 -preset 7 -svtav1-params fast-decode=3
 returncode = os.system(f'ffmpeg -hide_banner -safe 0 -f concat -i super_cool_list.txt {options.ffmpeg_options} "..\{playlist.get("title")}.webm"') 
 # If files couldn't be losslessly combined
 if returncode != 0:
