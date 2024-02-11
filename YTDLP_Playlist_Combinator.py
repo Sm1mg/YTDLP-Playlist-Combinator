@@ -14,6 +14,8 @@ parser.add_option('-o', '--ffmpeg-options', dest='ffmpeg_options', default='-c c
                   help='''full ffmpeg parameters to use
                   default will try to losslessly append the files (this will error if the inputs are of different resolutions)
                                         ''')
+parser.add_option('-p', '--preserve-working-dir', dest='preserve', action="store_true", default=False,
+                  help="preserve the working directory between runs, will not delete before or after the script  default is False")
 (options, args) = parser.parse_args()
 def monitor(d):
     filenames.append(d.get('info_dict').get('_filename'))
@@ -54,12 +56,13 @@ filenames = []
 
 # If the working path exists aleady, clear it
 if os.path.exists(working_path):
-    clear_working_path()     
-
+    if not options.preserve:
+        clear_working_path()     
+else:
 # Create working directory
-os.mkdir(working_path)
-print("Working path created")
-os.chdir(working_path)
+    os.mkdir(working_path)
+    print("Working path created")
+    os.chdir(working_path)
 
 # Gather data on playlist
 playlist = yt_dlp.YoutubeDL(dlp_options).extract_info(url, download=False)
@@ -103,7 +106,8 @@ if returncode != 0:
     print("Something went wrong when concatenating the files, giving up.  Have fun!")
     exit(1)
 
-clear_working_path()
+if not options.preserve:
+    clear_working_path()
 
 print("Done, have a good day!")
 exit(0)
